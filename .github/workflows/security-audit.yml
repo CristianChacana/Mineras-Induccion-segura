@@ -1,0 +1,39 @@
+name: CODELCO Zero-Trust Security Audit
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del Repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Entorno Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar Dependencias del Backend Seguro
+        run: |
+          python -m pip install --upgrade pip
+          pip install fastapi uvicorn pydantic requests
+
+      - name: Validar Sintaxis e Integridad de servidor.py
+        run: |
+          python -m py_compile servidor.py
+          python -m py_compile pentest_audit.py
+
+      - name: Iniciar Servidor Backend en Segundo Plano
+        run: |
+          python servidor.py &
+          sleep 3
+
+      - name: Ejecutar Suite de Pentesting Automatizado (OWASP Top 10)
+        run: |
+          python pentest_audit.py http://127.0.0.1:8000
